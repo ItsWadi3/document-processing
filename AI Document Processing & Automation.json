@@ -1,0 +1,273 @@
+{
+  "name": "AI Document Processing & Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a1b2c3d4-5678-9abc-def0-112233445566",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5f997c91-20e9-4454-a70e-4d2e288c0120",
+      "name": "Receive Document Data",
+      "webhookId": "a1b2c3d4-5678-9abc-def0-112233445566"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\nlet body = item.json.body;\n// 0. Data Normalization\n// If 'body' is missing but top-level fields (like document_type) exist, \n// treat the top-level as the body to fix the checkbox logic.\nif (!body && item.json.document_type) {\n  body = { ...item.json };\n  // Ensure we don't end up with body.body\n  delete body.body;\n  // Update item.json.body so subsequent nodes like PDF/Email keep working\n  item.json.body = body;\n}\nbody = body || {};\n// Helper: set 'X' or empty string\nconst setX = (condition) => condition ? 'X' : '';\n// Helper: use explicit value from body if provided, otherwise derive\nconst pick = (explicit, derived) => (explicit !== undefined && explicit !== null) ? explicit : derived;\n// 1. Document Type Checkboxes\nconst docType = (body.document_type || '').toLowerCase();\nitem.json.DocType_Invoice = pick(body.DocType_Invoice, setX(docType.includes('invoice')));\nitem.json.DocType_Contract = pick(body.DocType_Contract, setX(docType.includes('contract')));\nitem.json.DocType_Application = pick(body.DocType_Application, setX(docType.includes('application')));\n// 2. Currency Checkboxes\nconst currency = (body.currency || '').toUpperCase();\nitem.json.Currency_EUR = pick(body.Currency_EUR, setX(currency === 'EUR'));\nitem.json.Currency_USD = pick(body.Currency_USD, setX(currency === 'USD'));\nitem.json.Currency_GBP = pick(body.Currency_GBP, setX(currency === 'GBP'));\n// 3. Target System Checkboxes\nconst targetSystem = (body.target_system || '').toLowerCase();\nitem.json.Target_ERP = pick(body.Target_ERP, setX(targetSystem.includes('erp')));\nitem.json.Target_CRM = pick(body.Target_CRM, setX(targetSystem.includes('crm')));\n// 4. Priority Checkboxes\nconst priority = (body.priority || '').toLowerCase();\nitem.json.Priority_Low = pick(body.Priority_Low, setX(priority === 'low'));\nitem.json.Priority_Medium = pick(body.Priority_Medium, setX(priority === 'medium'));\nitem.json.Priority_High = pick(body.Priority_High, setX(priority === 'high'));\nreturn [item];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "60575364-b268-4c23-bdc3-9fb9d094cbe5",
+      "name": "Normalize Data & Set Checkboxes"
+    },
+    {
+      "parameters": {
+        "operation": "Fill a PDF Form",
+        "url": "filetoken://3e5892c5759eb4f6046303f61699320670e0eacbde8ba97465",
+        "fields": {
+          "metadataValues": [
+            {
+              "fieldName": "DocumentNumber",
+              "text": "={{ $json.document_number }}"
+            },
+            {
+              "fieldName": "DocumentDate",
+              "text": "={{ $json.document_date }}"
+            },
+            {
+              "fieldName": "SenderCompany",
+              "text": "={{ $json.sender_company }}"
+            },
+            {
+              "fieldName": "SenderName",
+              "text": "={{ $json.sender_name }}"
+            },
+            {
+              "fieldName": "SenderEmail",
+              "text": "={{ $json.sender_email }}"
+            },
+            {
+              "fieldName": "Amount",
+              "text": "={{ $json.amount }}"
+            },
+            {
+              "fieldName": "Description",
+              "text": "={{ $json.description }}"
+            },
+            {
+              "fieldName": "ProcessingNotes",
+              "text": "={{ $json.processing_notes }}"
+            },
+            {
+              "fieldName": "DocType_Invoice",
+              "text": "={{ $json.DocType_Invoice }}"
+            },
+            {
+              "fieldName": "DocType_Contract",
+              "text": "={{ $json.DocType_Contract }}"
+            },
+            {
+              "fieldName": "DocType_Application",
+              "text": "={{ $json.DocType_Application }}"
+            },
+            {
+              "fieldName": "Currency_EUR",
+              "text": "={{ $json.Currency_EUR }}"
+            },
+            {
+              "fieldName": "Currency_USD",
+              "text": "={{ $json.Currency_USD }}"
+            },
+            {
+              "fieldName": "Currency_GBP",
+              "text": "={{ $json.Currency_GBP }}"
+            },
+            {
+              "fieldName": "Target_ERP",
+              "text": "={{ $json.Target_ERP }}"
+            },
+            {
+              "fieldName": "Target_CRM",
+              "text": "={{ $json.Target_CRM }}"
+            },
+            {
+              "fieldName": "Priority_Low",
+              "text": "={{ $json.Priority_Low }}"
+            },
+            {
+              "fieldName": "Priority_Medium",
+              "text": "={{ $json.Priority_Medium }}"
+            },
+            {
+              "fieldName": "Priority_High",
+              "text": "={{ $json.Priority_High }}"
+            }
+          ]
+        },
+        "advancedOptions": {}
+      },
+      "type": "n8n-nodes-pdfco.PDFco Api",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "0e18e1a4-dde5-417d-bbdc-569eb5d57b6e",
+      "name": "Fill PDF Form (PDF.co)",
+      "credentials": {
+        "pdfcoApi": {
+          "id": "SEz6UnUwKPhSo7tb",
+          "name": "PDF.co account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        640,
+        0
+      ],
+      "id": "e6fd56fe-775f-44a1-acad-d6fe8557db2c",
+      "name": "Download Processed PDF",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Normalize Data & Set Checkboxes').item.json.recipient_email }}",
+        "subject": "=Document Processing: {{ $('Normalize Data & Set Checkboxes').item.json.document_type }} from {{ $('Normalize Data & Set Checkboxes').item.json.sender_company }}",
+        "emailType": "text",
+        "message": "=Dear Team,\n\nPlease find attached the processed document intake form.\n\nDocument Type: {{ $('Normalize Data & Set Checkboxes').item.json.document_type }}\nSender: {{ $('Normalize Data & Set Checkboxes').item.json.sender_company }}\nDocument Number: {{ $('Normalize Data & Set Checkboxes').item.json.document_number }}\nPriority: {{ $('Normalize Data & Set Checkboxes').item.json.priority }}\n\nThis document has been automatically processed using AI-powered classification and data extraction.\n\nBest regards,\nDocument Processing System",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        0
+      ],
+      "id": "67bff87e-cf05-4e18-b769-538f21d1b82a",
+      "name": "Email Processed Document",
+      "webhookId": "d5e6f7a8-b9c0-1234-efab-567890123456",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "x0qdntdgRznxXAEe",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Receive Document Data": [
+      {
+        "json": {
+          "document_type": "Invoice",
+          "document_number": "INV-2026-0315",
+          "document_date": "2026-03-03",
+          "sender_company": "TechSolutions GmbH",
+          "sender_name": "Anna Müller",
+          "sender_email": "anna.mueller@techsolutions.de",
+          "amount": "2,450.00",
+          "currency": "EUR",
+          "description": "IT-Beratungsleistungen Februar 2026 – Systemintegration und API-Entwicklung",
+          "target_system": "ERP",
+          "priority": "High",
+          "processing_notes": "Zahlung innerhalb 30 Tagen. Kostenstelle: IT-4200",
+          "recipient_email": "wadiatahir564@gmail.com"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Receive Document Data": {
+      "main": [
+        [
+          {
+            "node": "Normalize Data & Set Checkboxes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Data & Set Checkboxes": {
+      "main": [
+        [
+          {
+            "node": "Fill PDF Form (PDF.co)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fill PDF Form (PDF.co)": {
+      "main": [
+        [
+          {
+            "node": "Download Processed PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Processed PDF": {
+      "main": [
+        [
+          {
+            "node": "Email Processed Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Processed Document": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "2231d323-ba7e-4b48-82e7-bdb42d59a6a3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "40a629d4c54165e4c6fe18da00020e6c415e7a33a7eb7cedb963039b092c06be"
+  },
+  "id": "AaytsELCwWsBP5vy",
+  "tags": []
+}
