@@ -181,6 +181,13 @@ curl -X POST https://your-n8n-instance.com/webhook/YOUR_WEBHOOK_PATH \
   -H "Content-Type: application/json" \
   -d @payload.json
 ```
+---
+
+## 📄 Document Intake Form
+
+The **Document Intake Form** (`Document_Intake_Form.pdf`) was generated using **prompt engineering** techniques with **Antigravity** (Model: **Claude Opus 4.6**). The form serves as a structured input template for the document processing pipeline.
+
+> **Note:** The prompt engineering methodology and workflow used to generate this form is a separate topic and could be shared as its own project in the future.
 
 ---
 
